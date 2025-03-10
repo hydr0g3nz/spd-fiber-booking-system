@@ -25,18 +25,16 @@ type BookingUseCase interface {
 
 // BookingUseCaseImpl implements BookingUseCase
 type BookingUseCaseImpl struct {
-	repo   repository.BookingRepository
-	cache  utils.Cache
-	nextID int64
-	mu     sync.Mutex
+	repo  repository.BookingRepository
+	cache utils.Cache
+	mu    sync.Mutex
 }
 
 // NewBookingUseCase creates a new instance of BookingUseCaseImpl
 func NewBookingUseCase(repo repository.BookingRepository, cache utils.Cache) BookingUseCase {
 	uc := &BookingUseCaseImpl{
-		repo:   repo,
-		cache:  cache,
-		nextID: 11, // Start from 11 since we'll have default bookings 1-10
+		repo:  repo,
+		cache: cache,
 	}
 
 	// Start background task to check for expired bookings
@@ -47,12 +45,7 @@ func NewBookingUseCase(repo repository.BookingRepository, cache utils.Cache) Boo
 
 // CreateBooking creates a new booking
 func (uc *BookingUseCaseImpl) CreateBooking(ctx context.Context, req *dto.CreateBookingRequest) (*models.Booking, error) {
-	uc.mu.Lock() // ล็อคก่อนอ่าน/เขียนค่า nextID
-	id := uc.nextID
-	uc.nextID++
-	uc.mu.Unlock()
 	booking := &models.Booking{
-		ID:        id,
 		UserID:    req.UserID,
 		ServiceID: req.ServiceID,
 		Price:     req.Price,
@@ -61,22 +54,22 @@ func (uc *BookingUseCaseImpl) CreateBooking(ctx context.Context, req *dto.Create
 		UpdatedAt: time.Now(),
 	}
 
-	// // Save booking to repository
-	// newBooking, err := uc.repo.Create(ctx, booking)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// Store in cache
-	cacheKey := fmt.Sprintf("booking:%d", booking.ID)
-	uc.cache.Set(cacheKey, booking)
-
-	// For high-value bookings, run credit check in background
-	if booking.Price > 50000 {
-		go uc.checkCredit(booking)
+	// Save booking to repository
+	newBooking, err := uc.repo.Create(ctx, booking)
+	if err != nil {
+		return nil, err
 	}
 
-	return booking, nil
+	// Store in cache
+	cacheKey := fmt.Sprintf("booking:%d", newBooking.ID)
+	uc.cache.Set(cacheKey, newBooking)
+
+	// For high-value bookings, run credit check in background
+	if newBooking.Price > 50000 {
+		go uc.checkCredit(ctx, newBooking)
+	}
+
+	return newBooking, nil
 }
 
 // GetBookingByID retrieves a booking by ID
@@ -84,7 +77,7 @@ func (uc *BookingUseCaseImpl) GetBookingByID(ctx context.Context, id int64) (*mo
 	// Try to get from cache first
 	cacheKey := fmt.Sprintf("booking:%d", id)
 	if cachedValue, found := uc.cache.Get(cacheKey); found {
-		fmt.Println("Get from cache")
+		log.Println("Booking retrieved from cache")
 		return cachedValue.(*models.Booking), nil
 	}
 
@@ -93,24 +86,46 @@ func (uc *BookingUseCaseImpl) GetBookingByID(ctx context.Context, id int64) (*mo
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Get from repository")
+
+	// Add to cache for future use
+	uc.cache.Set(cacheKey, booking)
+	log.Println("Booking retrieved from repository and added to cache")
+
 	return booking, nil
 }
 
 // GetAllBookings retrieves all bookings with optional sorting and filtering
 func (uc *BookingUseCaseImpl) GetAllBookings(ctx context.Context, params *dto.BookingsQueryParams) ([]*models.Booking, error) {
-	// Get all bookings from repository
-	bookingsRepo, err := uc.repo.GetAll(ctx)
+	// Get all bookings from repository - this is our source of truth
+	bookings, err := uc.repo.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	bookingsCache := uc.cache.GetAll()
-	mergedBookings := make([]*models.Booking, 0, len(bookingsRepo)+len(bookingsCache))
-	for _, booking := range bookingsCache {
-		mergedBookings = append(mergedBookings, booking.(*models.Booking))
+
+	// Check cache for any new bookings not yet in repository
+	cacheBookings := uc.cache.GetAll()
+	bookingMap := make(map[int64]*models.Booking)
+
+	// First, add all bookings from repository to our map
+	for _, booking := range bookings {
+		bookingMap[booking.ID] = booking
 	}
-	mergedBookings = append(mergedBookings, bookingsRepo...)
-	// Merge repository and cache bookings
+
+	// Then, check for any bookings in cache that might not be in repository yet
+	for _, cachedValue := range cacheBookings {
+		cacheBooking := cachedValue.(*models.Booking)
+		// Only add if it doesn't exist in our map (to avoid duplicates)
+		if _, exists := bookingMap[cacheBooking.ID]; !exists {
+			bookingMap[cacheBooking.ID] = cacheBooking
+		}
+	}
+
+	// Convert map back to slice
+	mergedBookings := make([]*models.Booking, 0, len(bookingMap))
+	for _, booking := range bookingMap {
+		mergedBookings = append(mergedBookings, booking)
+	}
+
 	// Filter high-value bookings if requested
 	if params.HighValue {
 		mergedBookings = utils.FilterHighValueBookings(mergedBookings)
@@ -129,8 +144,8 @@ func (uc *BookingUseCaseImpl) GetAllBookings(ctx context.Context, params *dto.Bo
 
 // CancelBooking cancels a booking
 func (uc *BookingUseCaseImpl) CancelBooking(ctx context.Context, id int64) (*models.Booking, error) {
-	// Get booking from repository
-	booking, err := uc.repo.GetByID(ctx, id)
+	// Get booking
+	booking, err := uc.GetBookingByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -150,15 +165,17 @@ func (uc *BookingUseCaseImpl) CancelBooking(ctx context.Context, id int64) (*mod
 		return nil, err
 	}
 
-	// Remove from cache
+	// Update in cache
 	cacheKey := fmt.Sprintf("booking:%d", id)
-	uc.cache.Delete(cacheKey)
+	uc.cache.Set(cacheKey, updatedBooking)
 
 	return updatedBooking, nil
 }
 
 // checkCredit simulates a credit check for high-value bookings
-func (uc *BookingUseCaseImpl) checkCredit(booking *models.Booking) {
+func (uc *BookingUseCaseImpl) checkCredit(ctx context.Context, booking *models.Booking) {
+	// Simulate some processing time
+	time.Sleep(2 * time.Second)
 
 	// Random credit check result (70% success rate)
 	rand.Seed(time.Now().UnixNano())
@@ -171,8 +188,16 @@ func (uc *BookingUseCaseImpl) checkCredit(booking *models.Booking) {
 	booking.Status = status
 	booking.UpdatedAt = time.Now()
 
+	// Update in repository
+	updatedBooking, err := uc.repo.Update(ctx, booking)
+	if err != nil {
+		log.Printf("Error updating booking after credit check: %v", err)
+		return
+	}
+
+	// Update in cache
 	cacheKey := fmt.Sprintf("booking:%d", booking.ID)
-	uc.cache.Set(cacheKey, booking)
+	uc.cache.Set(cacheKey, updatedBooking)
 
 	log.Printf("Credit check completed for booking %d. Status: %s", booking.ID, status)
 }
@@ -184,9 +209,9 @@ func (uc *BookingUseCaseImpl) checkExpiredBookings() {
 
 	for range ticker.C {
 		log.Println("Running expired bookings check...")
+		ctx := context.Background()
 
 		// Get all bookings from repository
-		ctx := context.Background()
 		bookings, err := uc.repo.GetAll(ctx)
 		if err != nil {
 			log.Printf("Error fetching bookings: %v", err)
@@ -203,27 +228,15 @@ func (uc *BookingUseCaseImpl) checkExpiredBookings() {
 				booking.UpdatedAt = now
 
 				// Update in repository
-				_, err := uc.repo.Update(ctx, booking)
+				updatedBooking, err := uc.repo.Update(ctx, booking)
 				if err != nil {
 					log.Printf("Error updating expired booking %d: %v", booking.ID, err)
 					continue
 				}
 
-				expiredCount++
-			}
-		}
-		// Get all bookings from cache
-		cacheBookings := uc.cache.GetAll()
-		for cacheKey, cachedValue := range cacheBookings {
-			booking := cachedValue.(*models.Booking)
-
-			// If booking is pending for more than 5 minutes, mark as canceled
-			if booking.Status == models.BookingStatusPending && now.Sub(booking.CreatedAt) > 5*time.Minute {
-				booking.Status = models.BookingStatusCanceled
-				booking.UpdatedAt = now
-
 				// Update in cache
-				uc.cache.Set(cacheKey, booking)
+				cacheKey := fmt.Sprintf("booking:%d", booking.ID)
+				uc.cache.Set(cacheKey, updatedBooking)
 
 				expiredCount++
 			}
