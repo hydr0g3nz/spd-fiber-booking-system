@@ -1,0 +1,205 @@
+swagger: "2.0"
+info:
+  title: "Fiber Booking System API"
+  description: "A booking system API built with Fiber framework"
+  version: "1.0"
+  contact:
+    name: "API Support"
+    email: "support@example.com"
+  license:
+    name: "MIT"
+    url: "https://opensource.org/licenses/MIT"
+host: "localhost:3000"
+basePath: "/api"
+schemes:
+  - "http"
+paths:
+  /bookings:
+    post:
+      summary: "Create a new booking"
+      description: "Create a new booking with the given details"
+      tags:
+        - "bookings"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "booking"
+          description: "Booking Information"
+          required: true
+          schema:
+            $ref: "#/definitions/CreateBookingRequest"
+      responses:
+        201:
+          description: "Created"
+          schema:
+            $ref: "#/definitions/Booking"
+        400:
+          description: "Bad Request"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Internal Server Error"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+    get:
+      summary: "Get all bookings"
+      description: "Get all bookings with optional sorting and filtering"
+      tags:
+        - "bookings"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "query"
+          name: "sort"
+          type: "string"
+          description: "Sort by (price or date)"
+          required: false
+        - in: "query"
+          name: "high-value"
+          type: "boolean"
+          description: "Filter high-value bookings (price > 50,000)"
+          required: false
+      responses:
+        200:
+          description: "OK"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Booking"
+        500:
+          description: "Internal Server Error"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /bookings/{id}:
+    get:
+      summary: "Get a booking by ID"
+      description: "Get a booking's details by its ID"
+      tags:
+        - "bookings"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "id"
+          type: "integer"
+          description: "Booking ID"
+          required: true
+      responses:
+        200:
+          description: "OK"
+          schema:
+            $ref: "#/definitions/Booking"
+        400:
+          description: "Bad Request"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        404:
+          description: "Not Found"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+    delete:
+      summary: "Cancel a booking"
+      description: "Cancel a booking by its ID"
+      tags:
+        - "bookings"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "path"
+          name: "id"
+          type: "integer"
+          description: "Booking ID"
+          required: true
+      responses:
+        200:
+          description: "OK"
+          schema:
+            $ref: "#/definitions/Booking"
+        400:
+          description: "Bad Request"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        404:
+          description: "Not Found"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+
+definitions:
+  CreateBookingRequest:
+    type: "object"
+    properties:
+      user_id:
+        type: "integer"
+        format: "int64"
+        description: "User ID"
+      service_id:
+        type: "integer"
+        format: "int64"
+        description: "Service ID"
+      price:
+        type: "number"
+        format: "float"
+        description: "Booking price"
+    required:
+      - "user_id"
+      - "service_id"
+      - "price"
+  Booking:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+        description: "Booking ID"
+      user_id:
+        type: "integer"
+        format: "int64"
+        description: "User ID"
+      service_id:
+        type: "integer"
+        format: "int64"
+        description: "Service ID"
+      price:
+        type: "number"
+        format: "float"
+        description: "Booking price"
+      status:
+        type: "string"
+        description: "Booking status (pending, confirmed, rejected, canceled)"
+        enum:
+          - "pending"
+          - "confirmed"
+          - "rejected"
+          - "canceled"
+      created_at:
+        type: "string"
+        format: "date-time"
+        description: "Creation timestamp"
+      updated_at:
+        type: "string"
+        format: "date-time"
+        description: "Last update timestamp"
