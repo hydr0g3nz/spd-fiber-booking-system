@@ -14,6 +14,7 @@ A robust booking management system built with Go and Fiber framework, following 
 - **API Documentation**: Swagger OpenAPI documentation
 - **Filter & Sort Options**: Advanced querying capabilities
 - **Error Handling**: Robust error handling throughout the application
+- **Authentication Middleware**: API key validation for securing endpoints
 
 ## Project Architecture
 
@@ -43,6 +44,32 @@ fiber-booking-system/
 5. Data flows through the layers using **models** and **DTOs**
 
 ## Special Features
+
+### Authentication Middleware
+
+The system implements an API key-based authentication middleware:
+
+```go
+// Auth middleware for authentication
+func Auth() fiber.Handler {
+    return func(c *fiber.Ctx) error {
+        // Check for API key in headers
+        apiKey := c.Get("X-API-Key")
+        
+        // For demo, we'll accept any API key that's at least 10 characters
+        if len(apiKey) < 10 {
+            return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+                "error": "Invalid API Key",
+            })
+        }
+
+        // Authentication successful
+        return c.Next()
+    }
+}
+```
+
+All API endpoints require a valid API key (at least 10 characters long) to be provided in the `X-API-Key` header.
 
 ### Type-Safe Enum Implementation
 
@@ -213,6 +240,18 @@ http://localhost:3000/swagger/index.html
     - `sort` - Sort bookings by 'price' or 'date'
     - `high-value` - Filter high-value bookings (price > 50,000)
 - `DELETE /api/bookings/{id}` - Cancel a booking
+
+### Authentication
+
+All API endpoints require authentication using an API key:
+
+- Header: `X-API-Key`
+- Format: Any string of at least 10 characters
+
+Example:
+```
+X-API-Key: abcdef1234567890
+```
 
 ## Implementation Details
 
