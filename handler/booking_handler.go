@@ -32,6 +32,7 @@ func NewBookingHandler(bookingUseCase usecase.BookingUseCase) *BookingHandler {
 }
 
 // CreateBooking godoc
+// @Security ApiKeyAuth
 // @Summary Create a new booking
 // @Description Create a new booking with the provided details
 // @Tags bookings
@@ -40,6 +41,7 @@ func NewBookingHandler(bookingUseCase usecase.BookingUseCase) *BookingHandler {
 // @Param booking body dto.CreateBookingRequest true "Booking Information"
 // @Success 201 {object} models.Booking "Created booking"
 // @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /bookings [post]
 func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
@@ -69,6 +71,7 @@ func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 }
 
 // GetBooking godoc
+// @Security ApiKeyAuth
 // @Summary Get a booking by ID
 // @Description Get detailed information about a specific booking
 // @Tags bookings
@@ -77,6 +80,7 @@ func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 // @Param id path int true "Booking ID" minimum(1)
 // @Success 200 {object} models.Booking "Booking details"
 // @Failure 400 {object} map[string]string "Invalid booking ID format"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [get]
 func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
@@ -98,6 +102,7 @@ func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
 }
 
 // GetAllBookings godoc
+// @Security ApiKeyAuth
 // @Summary Get all bookings
 // @Description Get a list of all bookings with optional sorting and filtering
 // @Tags bookings
@@ -106,6 +111,7 @@ func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
 // @Param sort query string false "Sort by field (price or date)"
 // @Param high-value query boolean false "Filter high-value bookings (price > 50,000)"
 // @Success 200 {array} models.Booking "List of bookings"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /bookings [get]
 func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
@@ -125,6 +131,7 @@ func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 }
 
 // CancelBooking godoc
+// @Security ApiKeyAuth
 // @Summary Cancel a booking
 // @Description Cancel an existing booking by its ID
 // @Tags bookings
@@ -133,6 +140,7 @@ func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 // @Param id path int true "Booking ID" minimum(1)
 // @Success 200 {object} models.Booking "Canceled booking details"
 // @Failure 400 {object} map[string]string "Invalid booking ID or cannot cancel"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [delete]
 func (h *BookingHandler) CancelBooking(c *fiber.Ctx) error {

@@ -27,6 +27,10 @@ import (
 // @license.url https://opensource.org/licenses/MIT
 // @host localhost:3000
 // @BasePath /api
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+// @description API key authentication
 func main() {
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
