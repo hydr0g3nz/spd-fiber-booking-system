@@ -167,7 +167,7 @@ func (uc *BookingUseCaseImpl) CancelBooking(ctx context.Context, id int64) (*mod
 
 	// Update in cache
 	cacheKey := fmt.Sprintf("booking:%d", id)
-	uc.cache.Set(cacheKey, updatedBooking)
+	uc.cache.Delete(cacheKey)
 
 	return updatedBooking, nil
 }

@@ -1,23 +1,10 @@
 package utils
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"sort"
-	"strconv"
 
 	"github.com/hydr0g3nz/spd-fiber-booking-system/models"
 )
-
-// GenerateBookingHash creates a hash for a booking based on its key fields
-func GenerateBookingHash(userID, serviceID int64, price float64) string {
-	data := strconv.FormatInt(userID, 10) +
-		strconv.FormatInt(serviceID, 10) +
-		strconv.FormatFloat(price, 'f', 2, 64)
-
-	hash := sha256.Sum256([]byte(data))
-	return hex.EncodeToString(hash[:])
-}
 
 // SortBookingsByPrice sorts a slice of booking pointers by price
 func SortBookingsByPrice(bookings []*models.Booking, ascending bool) {
