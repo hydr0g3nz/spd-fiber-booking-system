@@ -28,8 +28,8 @@ func NewBookingHandler(bookingUseCase usecase.BookingUseCase) *BookingHandler {
 // @Produce json
 // @Param booking body dto.CreateBookingRequest true "Booking Information"
 // @Success 201 {object} models.Booking
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 500 {object} map[string]string "Server error"
 // @Router /bookings [post]
 func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 	req := new(dto.CreateBookingRequest)
@@ -65,9 +65,8 @@ func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path int true "Booking ID"
 // @Success 200 {object} models.Booking
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [get]
 func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -96,7 +95,7 @@ func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
 // @Param sort query string false "Sort by (price or date)"
 // @Param high-value query boolean false "Filter high-value bookings (price > 50,000)"
 // @Success 200 {array} models.Booking
-// @Failure 500 {object} map[string]string
+// @Failure 500 {object} map[string]string "Server error"
 // @Router /bookings [get]
 func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 	params := &dto.BookingsQueryParams{
@@ -122,9 +121,8 @@ func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path int true "Booking ID"
 // @Success 200 {object} models.Booking
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Failure 400 {object} map[string]string "Invalid request or cannot cancel"
+// @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [delete]
 func (h *BookingHandler) CancelBooking(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)

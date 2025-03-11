@@ -24,4 +24,9 @@ func SetupRoutes(app *fiber.App, bookingHandler *handler.BookingHandler) {
 	bookings.Get("/", bookingHandler.GetAllBookings)
 	bookings.Get("/:id", bookingHandler.GetBooking)
 	bookings.Delete("/:id", bookingHandler.CancelBooking)
+
+	// Root route for API - redirect to Swagger docs
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Redirect("/swagger/index.html")
+	})
 }

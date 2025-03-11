@@ -6,11 +6,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/swagger"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/handler"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/repository"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/router"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/usecase"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/utils"
+
+	// Import swagger generated docs
+	_ "github.com/hydr0g3nz/spd-fiber-booking-system/docs"
 )
 
 // @title Fiber Booking System API
@@ -44,6 +48,13 @@ func main() {
 	app.Use(cors.New())
 	app.Use(recover.New())
 
+	// Setup Swagger
+	app.Get("/swagger/*", swagger.New(swagger.Config{
+		Title:        "Fiber Booking System API",
+		DeepLinking:  false,
+		DocExpansion: "list",
+	}))
+
 	// Initialize dependencies
 	cache := utils.NewInMemoryCache()
 	bookingRepo := repository.NewBookingRepositoryMock()
@@ -55,5 +66,6 @@ func main() {
 
 	// Start server
 	log.Println("Starting server on :3000")
+	log.Println("API documentation available at http://localhost:3000/swagger/")
 	log.Fatal(app.Listen("127.0.0.1:3000"))
 }
