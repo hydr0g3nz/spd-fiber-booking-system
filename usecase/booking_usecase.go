@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sync"
 	"time"
 
 	"github.com/hydr0g3nz/spd-fiber-booking-system/dto"
@@ -27,7 +26,6 @@ type BookingUseCase interface {
 type BookingUseCaseImpl struct {
 	repo  repository.BookingRepository
 	cache utils.Cache
-	mu    sync.Mutex
 }
 
 // NewBookingUseCase creates a new instance of BookingUseCaseImpl
