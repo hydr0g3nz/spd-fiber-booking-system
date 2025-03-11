@@ -1,14 +1,25 @@
 package handler
 
 import (
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/dto"
 	"github.com/hydr0g3nz/spd-fiber-booking-system/usecase"
 )
 
-// BookingHandler handles HTTP requests for bookings
+// SwaggerModels defines models for swagger documentation
+// @title Fiber Booking System API
+// @version 1.0
+// @description A booking management system built with Go and Fiber framework
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email support@example.com
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+// @host localhost:3000
+// @BasePath /api
+// @schemes http
+
+// BookingHandler manages HTTP requests for booking endpoints
 type BookingHandler struct {
 	bookingUseCase usecase.BookingUseCase
 }
@@ -22,14 +33,14 @@ func NewBookingHandler(bookingUseCase usecase.BookingUseCase) *BookingHandler {
 
 // CreateBooking godoc
 // @Summary Create a new booking
-// @Description Create a new booking with the given details
+// @Description Create a new booking with the provided details
 // @Tags bookings
 // @Accept json
 // @Produce json
 // @Param booking body dto.CreateBookingRequest true "Booking Information"
-// @Success 201 {object} models.Booking
-// @Failure 400 {object} map[string]string "Invalid request"
-// @Failure 500 {object} map[string]string "Server error"
+// @Success 201 {object} models.Booking "Created booking"
+// @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /bookings [post]
 func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 	req := new(dto.CreateBookingRequest)
@@ -59,24 +70,24 @@ func (h *BookingHandler) CreateBooking(c *fiber.Ctx) error {
 
 // GetBooking godoc
 // @Summary Get a booking by ID
-// @Description Get a booking's details by its ID
+// @Description Get detailed information about a specific booking
 // @Tags bookings
 // @Accept json
 // @Produce json
-// @Param id path int true "Booking ID"
-// @Success 200 {object} models.Booking
-// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Param id path int true "Booking ID" minimum(1)
+// @Success 200 {object} models.Booking "Booking details"
+// @Failure 400 {object} map[string]string "Invalid booking ID format"
 // @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [get]
 func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
-	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
-	if err != nil {
+	id, err := c.ParamsInt("id")
+	if err != nil || id <= 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
+			"error": "Invalid booking ID format",
 		})
 	}
 
-	booking, err := h.bookingUseCase.GetBookingByID(c.Context(), id)
+	booking, err := h.bookingUseCase.GetBookingByID(c.Context(), int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Booking not found",
@@ -88,14 +99,14 @@ func (h *BookingHandler) GetBooking(c *fiber.Ctx) error {
 
 // GetAllBookings godoc
 // @Summary Get all bookings
-// @Description Get all bookings with optional sorting and filtering
+// @Description Get a list of all bookings with optional sorting and filtering
 // @Tags bookings
 // @Accept json
 // @Produce json
-// @Param sort query string false "Sort by (price or date)"
+// @Param sort query string false "Sort by field (price or date)"
 // @Param high-value query boolean false "Filter high-value bookings (price > 50,000)"
-// @Success 200 {array} models.Booking
-// @Failure 500 {object} map[string]string "Server error"
+// @Success 200 {array} models.Booking "List of bookings"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /bookings [get]
 func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 	params := &dto.BookingsQueryParams{
@@ -115,30 +126,32 @@ func (h *BookingHandler) GetAllBookings(c *fiber.Ctx) error {
 
 // CancelBooking godoc
 // @Summary Cancel a booking
-// @Description Cancel a booking by its ID
+// @Description Cancel an existing booking by its ID
 // @Tags bookings
 // @Accept json
 // @Produce json
-// @Param id path int true "Booking ID"
-// @Success 200 {object} models.Booking
-// @Failure 400 {object} map[string]string "Invalid request or cannot cancel"
+// @Param id path int true "Booking ID" minimum(1)
+// @Success 200 {object} models.Booking "Canceled booking details"
+// @Failure 400 {object} map[string]string "Invalid booking ID or cannot cancel"
 // @Failure 404 {object} map[string]string "Booking not found"
 // @Router /bookings/{id} [delete]
 func (h *BookingHandler) CancelBooking(c *fiber.Ctx) error {
-	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
-	if err != nil {
+	id, err := c.ParamsInt("id")
+	if err != nil || id <= 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid ID format",
+			"error": "Invalid booking ID format",
 		})
 	}
 
-	booking, err := h.bookingUseCase.CancelBooking(c.Context(), id)
+	booking, err := h.bookingUseCase.CancelBooking(c.Context(), int64(id))
 	if err != nil {
+		// Check if this is a business rule error (cannot cancel confirmed booking)
 		if err.Error() == "cannot cancel a confirmed booking" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
 			})
 		}
+		// Otherwise, it's likely a "not found" error
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Booking not found",
 		})

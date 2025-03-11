@@ -25,7 +25,7 @@ const docTemplate = `{
     "paths": {
         "/bookings": {
             "get": {
-                "description": "Get all bookings with optional sorting and filtering",
+                "description": "Get a list of all bookings with optional sorting and filtering",
                 "consumes": [
                     "application/json"
                 ],
@@ -39,7 +39,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Sort by (price or date)",
+                        "description": "Sort by field (price or date)",
                         "name": "sort",
                         "in": "query"
                     },
@@ -52,7 +52,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "List of bookings",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -61,7 +61,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Server error",
+                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -72,7 +72,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new booking with the given details",
+                "description": "Create a new booking with the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -96,13 +96,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Created booking",
                         "schema": {
                             "$ref": "#/definitions/models.Booking"
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Invalid request parameters",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -111,7 +111,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Server error",
+                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -124,7 +124,7 @@ const docTemplate = `{
         },
         "/bookings/{id}": {
             "get": {
-                "description": "Get a booking's details by its ID",
+                "description": "Get detailed information about a specific booking",
                 "consumes": [
                     "application/json"
                 ],
@@ -137,6 +137,7 @@ const docTemplate = `{
                 "summary": "Get a booking by ID",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
                         "description": "Booking ID",
                         "name": "id",
@@ -146,13 +147,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Booking details",
                         "schema": {
                             "$ref": "#/definitions/models.Booking"
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Invalid booking ID format",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -172,7 +173,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Cancel a booking by its ID",
+                "description": "Cancel an existing booking by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -185,6 +186,7 @@ const docTemplate = `{
                 "summary": "Cancel a booking",
                 "parameters": [
                     {
+                        "minimum": 1,
                         "type": "integer",
                         "description": "Booking ID",
                         "name": "id",
@@ -194,13 +196,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Canceled booking details",
                         "schema": {
                             "$ref": "#/definitions/models.Booking"
                         }
                     },
                     "400": {
-                        "description": "Invalid request or cannot cancel",
+                        "description": "Invalid booking ID or cannot cancel",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -267,12 +269,6 @@ const docTemplate = `{
                     "example": 456
                 },
                 "status": {
-                    "enum": [
-                        "pending",
-                        "confirmed",
-                        "rejected",
-                        "canceled"
-                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.BookingStatus"

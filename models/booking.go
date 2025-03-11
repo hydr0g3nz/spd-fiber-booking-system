@@ -11,7 +11,7 @@ type Booking struct {
 	UserID    int64         `json:"user_id" example:"123" description:"User ID"`
 	ServiceID int64         `json:"service_id" example:"456" description:"Service ID"`
 	Price     float64       `json:"price" example:"30000.0" description:"Booking price"`
-	Status    BookingStatus `json:"status" enums:"pending,confirmed,rejected,canceled" example:"pending" description:"Booking status"`
+	Status    BookingStatus `json:"status"  example:"pending" description:"Booking status"`
 	CreatedAt time.Time     `json:"created_at" format:"date-time" example:"2024-03-11T12:00:00Z" description:"Creation timestamp"`
 	UpdatedAt time.Time     `json:"updated_at" format:"date-time" example:"2024-03-11T12:00:00Z" description:"Last update timestamp"`
 }
