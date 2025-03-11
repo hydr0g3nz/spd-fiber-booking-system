@@ -17,6 +17,7 @@ func SetupRoutes(app *fiber.App, bookingHandler *handler.BookingHandler) {
 
 	// Apply global middleware
 	api.Use(middleware.Logging())
+	api.Use(middleware.Auth())
 
 	// Bookings endpoints
 	bookings := api.Group("/bookings")
